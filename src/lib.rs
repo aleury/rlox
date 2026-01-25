@@ -53,7 +53,7 @@ impl Lox {
     }
 
     pub fn run(&mut self, source: &str) {
-        let scanner = Scanner::new(source);
+        let mut scanner = Scanner::new(source);
         let tokens = scanner.scan_tokens();
 
         for token in tokens {
