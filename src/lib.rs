@@ -1,8 +1,9 @@
+pub mod ast_printer;
+pub mod expr;
 pub mod scanner;
 
 use scanner::Scanner;
-
-use std::io::{self, Write};
+use std::io::Write;
 
 #[derive(Debug, Default)]
 pub struct Lox {
@@ -37,10 +38,10 @@ impl Lox {
         let mut input = String::new();
         loop {
             print!("> ");
-            io::stdout().flush()?;
+            std::io::stdout().flush()?;
 
             input.clear();
-            io::stdin().read_line(&mut input)?;
+            std::io::stdin().read_line(&mut input)?;
 
             let line = input.trim();
             if line.is_empty() {
