@@ -1,9 +1,16 @@
 pub mod ast_printer;
 pub mod expr;
+pub mod parser;
 pub mod scanner;
 
 use scanner::Scanner;
 use std::io::Write;
+
+use crate::{
+    ast_printer::ASTPrinter,
+    parser::{ParseError, Parser},
+    scanner::ScanError,
+};
 
 #[derive(Debug, Default)]
 pub struct Lox {
@@ -56,9 +63,38 @@ impl Lox {
     pub fn run(&mut self, source: &str) {
         let mut scanner = Scanner::new(source);
         let tokens = scanner.scan_tokens();
+        if !scanner.errors.is_empty() {
+            self.report_scan_errors(scanner.errors);
+            return;
+        }
+        let mut parser = Parser::new(&tokens);
+        match parser.parse() {
+            Ok(expression) => {
+                println!("{}", ASTPrinter.print(&expression));
+            }
+            Err(ParseError::UnexpectedToken { token, message }) => {
+                self.had_error = true;
+                self.error(
+                    token.line,
+                    &format!("Unexpected Token: {}, {message}", token.lexeme),
+                );
+            }
+        }
+    }
 
-        for token in tokens {
-            println!("{token:#?}");
+    fn report_scan_errors(&mut self, errors: Vec<ScanError>) {
+        for error in errors {
+            match error {
+                ScanError::IllegalCharacter { line, character } => {
+                    self.error(line, &format!("Illegal character '{character}'"));
+                }
+                ScanError::UnterminatedString { line } => {
+                    self.error(line, "Unterminated string");
+                }
+                ScanError::ParseNumberError { lexeme, line } => {
+                    self.error(line, &format!("Could not parse number '{lexeme}'"));
+                }
+            }
         }
     }
 

@@ -1,6 +1,6 @@
 #[derive(Debug)]
 pub enum ScanError {
-    IllegalCharacter(char),
+    IllegalCharacter { line: usize, character: char },
     UnterminatedString { line: usize },
     ParseNumberError { lexeme: String, line: usize },
 }
@@ -107,7 +107,10 @@ impl Scanner {
                 } else if c.is_ascii_alphabetic() || c == '_' {
                     self.identifier();
                 } else {
-                    self.errors.push(ScanError::IllegalCharacter(c));
+                    self.errors.push(ScanError::IllegalCharacter {
+                        line: self.line,
+                        character: c,
+                    });
                 }
             }
         }
@@ -236,7 +239,7 @@ impl Scanner {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum TokenType {
     // Single-character tokens
     LeftParen,
