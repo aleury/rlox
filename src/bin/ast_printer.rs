@@ -1,7 +1,7 @@
 use rlox::{
     ast_printer::ASTPrinter,
     expr::{Expr, Literal},
-    scanner::{Token, TokenType},
+    scanner::{Token, TokenKind},
 };
 
 fn main() {
@@ -10,8 +10,7 @@ fn main() {
             operator: Token {
                 line: 1,
                 lexeme: "-".into(),
-                literal: None,
-                token_type: TokenType::Minus,
+                kind: TokenKind::Minus,
             },
             right: Box::new(Expr::Literal {
                 value: Literal::Number(123.0),
@@ -20,8 +19,7 @@ fn main() {
         operator: Token {
             line: 1,
             lexeme: "*".into(),
-            literal: None,
-            token_type: TokenType::Star,
+            kind: TokenKind::Star,
         },
         right: Box::new(Expr::Grouping {
             expression: Box::new(Expr::Literal {

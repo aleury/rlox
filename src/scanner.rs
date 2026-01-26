@@ -36,55 +36,54 @@ impl Scanner {
         self.tokens.push(Token {
             line: self.line,
             lexeme: String::new(),
-            literal: None,
-            token_type: TokenType::Eof,
+            kind: TokenKind::Eof,
         });
         self.tokens.clone()
     }
 
     fn scan_token(&mut self) {
         match self.advance() {
-            '(' => self.add_token(TokenType::LeftParen, None),
-            ')' => self.add_token(TokenType::RightParen, None),
-            '{' => self.add_token(TokenType::LeftBrace, None),
-            '}' => self.add_token(TokenType::RightBrace, None),
-            ',' => self.add_token(TokenType::Comma, None),
-            '.' => self.add_token(TokenType::Dot, None),
-            '-' => self.add_token(TokenType::Minus, None),
-            '+' => self.add_token(TokenType::Plus, None),
-            ';' => self.add_token(TokenType::Semicolon, None),
-            '*' => self.add_token(TokenType::Star, None),
+            '(' => self.add_token(TokenKind::LeftParen),
+            ')' => self.add_token(TokenKind::RightParen),
+            '{' => self.add_token(TokenKind::LeftBrace),
+            '}' => self.add_token(TokenKind::RightBrace),
+            ',' => self.add_token(TokenKind::Comma),
+            '.' => self.add_token(TokenKind::Dot),
+            '-' => self.add_token(TokenKind::Minus),
+            '+' => self.add_token(TokenKind::Plus),
+            ';' => self.add_token(TokenKind::Semicolon),
+            '*' => self.add_token(TokenKind::Star),
             '!' => {
                 let token_type = if self.matches('=') {
-                    TokenType::BangEqual
+                    TokenKind::BangEqual
                 } else {
-                    TokenType::Bang
+                    TokenKind::Bang
                 };
-                self.add_token(token_type, None);
+                self.add_token(token_type);
             }
             '=' => {
                 let token_type = if self.matches('=') {
-                    TokenType::EqualEqual
+                    TokenKind::EqualEqual
                 } else {
-                    TokenType::Equal
+                    TokenKind::Equal
                 };
-                self.add_token(token_type, None);
+                self.add_token(token_type);
             }
             '<' => {
                 let token_type = if self.matches('=') {
-                    TokenType::LessEqual
+                    TokenKind::LessEqual
                 } else {
-                    TokenType::Less
+                    TokenKind::Less
                 };
-                self.add_token(token_type, None);
+                self.add_token(token_type);
             }
             '>' => {
                 let token_type = if self.matches('=') {
-                    TokenType::GreaterEqual
+                    TokenKind::GreaterEqual
                 } else {
-                    TokenType::Greater
+                    TokenKind::Greater
                 };
-                self.add_token(token_type, None);
+                self.add_token(token_type);
             }
             '/' => {
                 if self.matches('/') {
@@ -93,7 +92,7 @@ impl Scanner {
                         self.advance();
                     }
                 } else {
-                    self.add_token(TokenType::Slash, None);
+                    self.add_token(TokenKind::Slash);
                 }
             }
             ' ' | '\r' | '\t' => {} // ignore whitespace
@@ -122,25 +121,25 @@ impl Scanner {
         }
         let lexeme: String = self.source[self.start..self.current].iter().collect();
         let token_type = match lexeme.as_str() {
-            "and" => TokenType::And,
-            "class" => TokenType::Class,
-            "else" => TokenType::Else,
-            "false" => TokenType::False,
-            "for" => TokenType::For,
-            "fun" => TokenType::Fun,
-            "if" => TokenType::If,
-            "nil" => TokenType::Nil,
-            "or" => TokenType::Or,
-            "print" => TokenType::Print,
-            "return" => TokenType::Return,
-            "super" => TokenType::Super,
-            "this" => TokenType::This,
-            "true" => TokenType::True,
-            "var" => TokenType::Var,
-            "while" => TokenType::While,
-            _ => TokenType::Identifier,
+            "and" => TokenKind::And,
+            "class" => TokenKind::Class,
+            "else" => TokenKind::Else,
+            "false" => TokenKind::False,
+            "for" => TokenKind::For,
+            "fun" => TokenKind::Fun,
+            "if" => TokenKind::If,
+            "nil" => TokenKind::Nil,
+            "or" => TokenKind::Or,
+            "print" => TokenKind::Print,
+            "return" => TokenKind::Return,
+            "super" => TokenKind::Super,
+            "this" => TokenKind::This,
+            "true" => TokenKind::True,
+            "var" => TokenKind::Var,
+            "while" => TokenKind::While,
+            _ => TokenKind::Identifier,
         };
-        self.add_token(token_type, None);
+        self.add_token(token_type);
     }
 
     fn number(&mut self) {
@@ -159,7 +158,7 @@ impl Scanner {
         let lexeme: String = self.source[self.start..self.current].iter().collect();
 
         match lexeme.parse::<f64>() {
-            Ok(number) => self.add_token(TokenType::Number, Some(Literal::Number(number))),
+            Ok(number) => self.add_token(TokenKind::Number(number)),
             Err(_) => {
                 self.errors.push(ScanError::ParseNumberError {
                     lexeme,
@@ -190,7 +189,7 @@ impl Scanner {
         let string: String = self.source[self.start + 1..self.current - 1]
             .iter()
             .collect();
-        self.add_token(TokenType::String, Some(Literal::String(string)));
+        self.add_token(TokenKind::String(string));
     }
 
     fn peek(&self) -> char {
@@ -218,13 +217,12 @@ impl Scanner {
         true
     }
 
-    fn add_token(&mut self, token_type: TokenType, literal: Option<Literal>) {
+    fn add_token(&mut self, kind: TokenKind) {
         let lexeme: String = self.source[self.start..self.current].iter().collect();
         self.tokens.push(Token {
             line: self.line,
-            literal,
             lexeme,
-            token_type,
+            kind,
         });
     }
 
@@ -239,8 +237,8 @@ impl Scanner {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum TokenType {
+#[derive(Debug, Clone, PartialEq)]
+pub enum TokenKind {
     // Single-character tokens
     LeftParen,
     RightParen,
@@ -266,8 +264,8 @@ pub enum TokenType {
 
     // Literals
     Identifier,
-    String,
-    Number,
+    Number(f64),
+    String(String),
 
     // Keywords
     And,
@@ -294,12 +292,5 @@ pub enum TokenType {
 pub struct Token {
     pub line: usize,
     pub lexeme: String,
-    pub literal: Option<Literal>,
-    pub token_type: TokenType,
-}
-
-#[derive(Debug, Clone)]
-pub enum Literal {
-    Number(f64),
-    String(String),
+    pub kind: TokenKind,
 }
