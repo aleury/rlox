@@ -1,5 +1,5 @@
 use crate::{
-    expr::{Expr, Literal},
+    expr::{Expr, Value},
     scanner::{Token, TokenKind},
 };
 
@@ -118,19 +118,17 @@ impl<'a> Parser<'a> {
         let token = self.advance();
         match token.kind {
             TokenKind::True => Ok(Expr::Literal {
-                value: Literal::Bool(true),
+                value: Value::Bool(true),
             }),
             TokenKind::False => Ok(Expr::Literal {
-                value: Literal::Bool(false),
+                value: Value::Bool(false),
             }),
-            TokenKind::Nil => Ok(Expr::Literal {
-                value: Literal::Nil,
-            }),
+            TokenKind::Nil => Ok(Expr::Literal { value: Value::Nil }),
             TokenKind::Number(number) => Ok(Expr::Literal {
-                value: Literal::Number(number),
+                value: Value::Number(number),
             }),
             TokenKind::String(string) => Ok(Expr::Literal {
-                value: Literal::String(string),
+                value: Value::String(string),
             }),
             TokenKind::LeftParen => {
                 let expr = self.expression()?;

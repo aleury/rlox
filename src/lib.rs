@@ -1,5 +1,6 @@
 pub mod ast_printer;
 pub mod expr;
+pub mod interpreter;
 pub mod parser;
 pub mod scanner;
 
@@ -7,7 +8,7 @@ use scanner::Scanner;
 use std::io::Write;
 
 use crate::{
-    ast_printer::ASTPrinter,
+    interpreter::Interpreter,
     parser::{ParseError, Parser},
     scanner::ScanError,
 };
@@ -15,6 +16,7 @@ use crate::{
 #[derive(Debug, Default)]
 pub struct Lox {
     pub had_error: bool,
+    pub had_runtime_error: bool,
 }
 
 impl Lox {
@@ -32,6 +34,9 @@ impl Lox {
         self.run(&std::fs::read_to_string(path)?);
         if self.had_error {
             std::process::exit(65);
+        }
+        if self.had_runtime_error {
+            std::process::exit(70);
         }
         Ok(())
     }
@@ -70,7 +75,10 @@ impl Lox {
         let mut parser = Parser::new(&tokens);
         match parser.parse() {
             Ok(expression) => {
-                println!("{}", ASTPrinter.print(&expression));
+                if let Err(err) = Interpreter.interpret(&expression) {
+                    self.had_runtime_error = true;
+                    self.error(err.token.line, &err.message);
+                }
             }
             Err(ParseError::UnexpectedToken { token, message }) => {
                 self.had_error = true;
