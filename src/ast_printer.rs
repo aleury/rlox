@@ -14,11 +14,7 @@ impl ASTPrinter {
                 let name = format!("assign({})", name.lexeme);
                 self.parenthesize(&name, &[value])
             }
-            Expr::Binary {
-                left,
-                operator,
-                right,
-            } => self.parenthesize(&operator.lexeme, &[left, right]),
+            Expr::Binary { left, operator, right } => self.parenthesize(&operator.lexeme, &[left, right]),
             Expr::Grouping { expression } => self.parenthesize("group", &[expression]),
             Expr::Literal { value } => match value {
                 Value::Number(number) => Ok(number.to_string()),
@@ -31,11 +27,7 @@ impl ASTPrinter {
         }
     }
 
-    fn parenthesize(
-        &mut self,
-        name: &str,
-        exprs: &[&Expr],
-    ) -> Result<String, std::convert::Infallible> {
+    fn parenthesize(&mut self, name: &str, exprs: &[&Expr]) -> Result<String, std::convert::Infallible> {
         let mut builder = String::new();
 
         builder.push('(');

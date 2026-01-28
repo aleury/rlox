@@ -17,14 +17,7 @@ pub struct Scanner {
 impl Scanner {
     #[must_use]
     pub fn new(source: &str) -> Self {
-        Self {
-            source: source.chars().collect(),
-            line: 1,
-            start: 0,
-            current: 0,
-            tokens: vec![],
-            errors: vec![],
-        }
+        Self { source: source.chars().collect(), line: 1, start: 0, current: 0, tokens: vec![], errors: vec![] }
     }
 
     #[must_use]
@@ -33,11 +26,7 @@ impl Scanner {
             self.start = self.current;
             self.scan_token();
         }
-        self.tokens.push(Token {
-            line: self.line,
-            lexeme: String::new(),
-            kind: TokenKind::Eof,
-        });
+        self.tokens.push(Token { line: self.line, lexeme: String::new(), kind: TokenKind::Eof });
         self.tokens.clone()
     }
 
@@ -54,35 +43,19 @@ impl Scanner {
             ';' => self.add_token(TokenKind::Semicolon),
             '*' => self.add_token(TokenKind::Star),
             '!' => {
-                let token_type = if self.matches('=') {
-                    TokenKind::BangEqual
-                } else {
-                    TokenKind::Bang
-                };
+                let token_type = if self.matches('=') { TokenKind::BangEqual } else { TokenKind::Bang };
                 self.add_token(token_type);
             }
             '=' => {
-                let token_type = if self.matches('=') {
-                    TokenKind::EqualEqual
-                } else {
-                    TokenKind::Equal
-                };
+                let token_type = if self.matches('=') { TokenKind::EqualEqual } else { TokenKind::Equal };
                 self.add_token(token_type);
             }
             '<' => {
-                let token_type = if self.matches('=') {
-                    TokenKind::LessEqual
-                } else {
-                    TokenKind::Less
-                };
+                let token_type = if self.matches('=') { TokenKind::LessEqual } else { TokenKind::Less };
                 self.add_token(token_type);
             }
             '>' => {
-                let token_type = if self.matches('=') {
-                    TokenKind::GreaterEqual
-                } else {
-                    TokenKind::Greater
-                };
+                let token_type = if self.matches('=') { TokenKind::GreaterEqual } else { TokenKind::Greater };
                 self.add_token(token_type);
             }
             '/' => {
@@ -106,10 +79,7 @@ impl Scanner {
                 } else if c.is_ascii_alphabetic() || c == '_' {
                     self.identifier();
                 } else {
-                    self.errors.push(ScanError::IllegalCharacter {
-                        line: self.line,
-                        character: c,
-                    });
+                    self.errors.push(ScanError::IllegalCharacter { line: self.line, character: c });
                 }
             }
         }
@@ -160,10 +130,7 @@ impl Scanner {
         match lexeme.parse::<f64>() {
             Ok(number) => self.add_token(TokenKind::Number(number)),
             Err(_) => {
-                self.errors.push(ScanError::ParseNumberError {
-                    lexeme,
-                    line: self.line,
-                });
+                self.errors.push(ScanError::ParseNumberError { lexeme, line: self.line });
             }
         }
     }
@@ -177,8 +144,7 @@ impl Scanner {
         }
 
         if self.at_end() {
-            self.errors
-                .push(ScanError::UnterminatedString { line: self.line });
+            self.errors.push(ScanError::UnterminatedString { line: self.line });
             return;
         }
 
@@ -186,9 +152,7 @@ impl Scanner {
         self.advance();
 
         // Trim the surrounding quotes
-        let string: String = self.source[self.start + 1..self.current - 1]
-            .iter()
-            .collect();
+        let string: String = self.source[self.start + 1..self.current - 1].iter().collect();
         self.add_token(TokenKind::String(string));
     }
 
@@ -219,11 +183,7 @@ impl Scanner {
 
     fn add_token(&mut self, kind: TokenKind) {
         let lexeme: String = self.source[self.start..self.current].iter().collect();
-        self.tokens.push(Token {
-            line: self.line,
-            lexeme,
-            kind,
-        });
+        self.tokens.push(Token { line: self.line, lexeme, kind });
     }
 
     fn advance(&mut self) -> char {

@@ -52,10 +52,7 @@ impl<'a> Parser<'a> {
             initial_expr = Some(self.expression()?);
         }
 
-        self.consume(
-            &TokenKind::Semicolon,
-            "Expect ';' after a variable declaration.",
-        )?;
+        self.consume(&TokenKind::Semicolon, "Expect ';' after a variable declaration.")?;
         Ok(Stmt::Var(name, initial_expr))
     }
 
@@ -91,15 +88,9 @@ impl<'a> Parser<'a> {
             let equals = self.advance();
             let value = self.assignment()?;
             let Expr::Var { name } = expr else {
-                return Err(ParseError {
-                    token: equals,
-                    message: "Invalid assignment target".to_string(),
-                });
+                return Err(ParseError { token: equals, message: "Invalid assignment target".to_string() });
             };
-            return Ok(Expr::Assign {
-                name,
-                value: Box::new(value),
-            });
+            return Ok(Expr::Assign { name, value: Box::new(value) });
         }
 
         Ok(expr)
@@ -108,17 +99,10 @@ impl<'a> Parser<'a> {
     fn equality(&mut self) -> Result<Expr, ParseError> {
         let mut expr = self.comparison()?;
 
-        while matches!(
-            self.peek().kind,
-            TokenKind::BangEqual | TokenKind::EqualEqual
-        ) {
+        while matches!(self.peek().kind, TokenKind::BangEqual | TokenKind::EqualEqual) {
             let operator = self.advance();
             let right = self.comparison()?;
-            expr = Expr::Binary {
-                left: Box::new(expr),
-                operator,
-                right: Box::new(right),
-            }
+            expr = Expr::Binary { left: Box::new(expr), operator, right: Box::new(right) }
         }
 
         Ok(expr)
@@ -133,11 +117,7 @@ impl<'a> Parser<'a> {
         ) {
             let operator = self.advance();
             let right = self.term()?;
-            expr = Expr::Binary {
-                left: Box::new(expr),
-                operator,
-                right: Box::new(right),
-            }
+            expr = Expr::Binary { left: Box::new(expr), operator, right: Box::new(right) }
         }
 
         Ok(expr)
@@ -149,11 +129,7 @@ impl<'a> Parser<'a> {
         while matches!(self.peek().kind, TokenKind::Minus | TokenKind::Plus) {
             let operator = self.advance();
             let right = self.factor()?;
-            expr = Expr::Binary {
-                left: Box::new(expr),
-                operator,
-                right: Box::new(right),
-            }
+            expr = Expr::Binary { left: Box::new(expr), operator, right: Box::new(right) }
         }
 
         Ok(expr)
@@ -165,11 +141,7 @@ impl<'a> Parser<'a> {
         while matches!(self.peek().kind, TokenKind::Slash | TokenKind::Star) {
             let operator = self.advance();
             let right = self.unary()?;
-            expr = Expr::Binary {
-                left: Box::new(expr),
-                operator,
-                right: Box::new(right),
-            }
+            expr = Expr::Binary { left: Box::new(expr), operator, right: Box::new(right) }
         }
 
         Ok(expr)
@@ -179,10 +151,7 @@ impl<'a> Parser<'a> {
         if matches!(self.peek().kind, TokenKind::Bang | TokenKind::Minus) {
             let operator = self.advance();
             let right = self.unary()?;
-            return Ok(Expr::Unary {
-                operator,
-                right: Box::new(right),
-            });
+            return Ok(Expr::Unary { operator, right: Box::new(right) });
         }
         self.primary()
     }
@@ -190,47 +159,27 @@ impl<'a> Parser<'a> {
     fn primary(&mut self) -> Result<Expr, ParseError> {
         let token = self.advance();
         match token.kind {
-            TokenKind::True => Ok(Expr::Literal {
-                value: Value::Bool(true),
-            }),
-            TokenKind::False => Ok(Expr::Literal {
-                value: Value::Bool(false),
-            }),
+            TokenKind::True => Ok(Expr::Literal { value: Value::Bool(true) }),
+            TokenKind::False => Ok(Expr::Literal { value: Value::Bool(false) }),
             TokenKind::Nil => Ok(Expr::Literal { value: Value::Nil }),
-            TokenKind::Number(number) => Ok(Expr::Literal {
-                value: Value::Number(number),
-            }),
-            TokenKind::String(string) => Ok(Expr::Literal {
-                value: Value::String(string),
-            }),
+            TokenKind::Number(number) => Ok(Expr::Literal { value: Value::Number(number) }),
+            TokenKind::String(string) => Ok(Expr::Literal { value: Value::String(string) }),
             TokenKind::Identifier => Ok(Expr::Var { name: token }),
             TokenKind::LeftParen => {
                 let expr = self.expression()?;
                 self.consume(&TokenKind::RightParen, "Expect ')' after expression")?;
-                Ok(Expr::Grouping {
-                    expression: Box::new(expr),
-                })
+                Ok(Expr::Grouping { expression: Box::new(expr) })
             }
-            _ => Err(ParseError {
-                token,
-                message: "Expect expression".into(),
-            }),
+            _ => Err(ParseError { token, message: "Expect expression".into() }),
         }
     }
 
-    fn consume(
-        &mut self,
-        token_type: &TokenKind,
-        error_message: &str,
-    ) -> Result<Token, ParseError> {
+    fn consume(&mut self, token_type: &TokenKind, error_message: &str) -> Result<Token, ParseError> {
         if self.peek().kind == *token_type {
             let token = self.advance();
             return Ok(token);
         }
-        Err(ParseError {
-            token: self.peek(),
-            message: error_message.into(),
-        })
+        Err(ParseError { token: self.peek(), message: error_message.into() })
     }
 
     fn peek(&self) -> Token {
