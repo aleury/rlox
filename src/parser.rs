@@ -158,20 +158,21 @@ impl<'a> Parser<'a> {
 
     fn primary(&mut self) -> Result<Expr, ParseError> {
         let token = self.advance();
-        match token.kind {
-            TokenKind::True => Ok(Expr::Literal { value: Value::Bool(true) }),
-            TokenKind::False => Ok(Expr::Literal { value: Value::Bool(false) }),
-            TokenKind::Nil => Ok(Expr::Literal { value: Value::Nil }),
-            TokenKind::Number(number) => Ok(Expr::Literal { value: Value::Number(number) }),
-            TokenKind::String(string) => Ok(Expr::Literal { value: Value::String(string) }),
-            TokenKind::Identifier => Ok(Expr::Var { name: token }),
+        let expr = match token.kind {
+            TokenKind::True => Expr::Literal { value: Value::Bool(true) },
+            TokenKind::False => Expr::Literal { value: Value::Bool(false) },
+            TokenKind::Nil => Expr::Literal { value: Value::Nil },
+            TokenKind::Number(number) => Expr::Literal { value: Value::Number(number) },
+            TokenKind::String(string) => Expr::Literal { value: Value::String(string) },
+            TokenKind::Identifier => Expr::Var { name: token },
             TokenKind::LeftParen => {
                 let expr = self.expression()?;
                 self.consume(&TokenKind::RightParen, "Expect ')' after expression")?;
-                Ok(Expr::Grouping { expression: Box::new(expr) })
+                Expr::Grouping { expression: Box::new(expr) }
             }
-            _ => Err(ParseError { token, message: "Expect expression".into() }),
-        }
+            _ => return Err(ParseError { token, message: "Expect expression".into() }),
+        };
+        Ok(expr)
     }
 
     fn consume(&mut self, token_type: &TokenKind, error_message: &str) -> Result<Token, ParseError> {
