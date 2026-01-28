@@ -19,6 +19,9 @@ pub enum Expr {
         operator: Token,
         right: Box<Expr>,
     },
+    Var {
+        name: Token,
+    },
 }
 
 impl Expr {
@@ -40,6 +43,7 @@ impl Expr {
                 operator,
                 right,
             } => visitor.visit_binary(left, operator, right),
+            Expr::Var { name } => visitor.visit_variable(name),
         }
     }
 }
@@ -93,4 +97,11 @@ pub trait ExprVisitor<T> {
     ///
     /// Returns an error if the `ExprVisitor` fails to visit the binary expression.
     fn visit_binary(&self, left: &Expr, operator: &Token, right: &Expr) -> Result<T, Self::Error>;
+
+    /// Visit a variable expression.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the `ExprVisitor` fails to visit the variable expression.
+    fn visit_variable(&self, name: &Token) -> Result<T, Self::Error>;
 }

@@ -1,6 +1,8 @@
 use crate::{
+    environment::Environment,
     expr::{Expr, ExprVisitor, Value},
     scanner::{Token, TokenKind},
+    stmt::{Stmt, StmtVisitor},
 };
 
 macro_rules! error {
@@ -37,22 +39,65 @@ pub struct RuntimeError {
     pub message: String,
 }
 
-pub struct Interpreter;
+#[derive(Debug, Default)]
+pub struct Interpreter {
+    env: Environment,
+}
 
 impl Interpreter {
-    /// Interpret an expression and return its value or an error.
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl Interpreter {
+    /// Interpret a list of statements and return a result or an error.
     ///
     /// # Errors
     ///
     /// - `RuntimeError`: If an error occurs during interpretation.
-    pub fn interpret(&self, expression: &Expr) -> Result<(), RuntimeError> {
-        let value = self.evaluate(expression)?;
-        println!("{value}");
+    pub fn interpret(&mut self, statements: Vec<Stmt>) -> Result<(), RuntimeError> {
+        for statement in statements {
+            self.execute(&statement)?;
+        }
         Ok(())
+    }
+
+    fn execute(&mut self, statement: &Stmt) -> Result<(), RuntimeError> {
+        statement.accept(self)
     }
 
     fn evaluate(&self, expr: &Expr) -> Result<Value, RuntimeError> {
         expr.accept(self)
+    }
+}
+
+impl StmtVisitor<()> for Interpreter {
+    type Error = RuntimeError;
+
+    fn visit_print(&mut self, expr: &Expr) -> Result<(), Self::Error> {
+        let value = self.evaluate(expr)?;
+        println!("{value}");
+        Ok(())
+    }
+
+    fn visit_expression(&mut self, expr: &Expr) -> Result<(), Self::Error> {
+        self.evaluate(expr)?;
+        Ok(())
+    }
+
+    fn visit_variable_declaration(
+        &mut self,
+        name: &Token,
+        expr: &Option<Expr>,
+    ) -> Result<(), Self::Error> {
+        let value = match expr {
+            Some(expr) => self.evaluate(expr)?,
+            None => Value::Nil,
+        };
+        self.env.define(name.lexeme.clone(), value);
+        Ok(())
     }
 }
 
@@ -126,6 +171,16 @@ impl ExprVisitor<Value> for Interpreter {
             TokenKind::EqualEqual => Ok(Value::Bool(is_equal(&left, &right))),
             _ => error!(operator, "Unknown binary operator"),
         }
+    }
+
+    fn visit_variable(&self, name: &Token) -> Result<Value, Self::Error> {
+        let Some(value) = self.env.get(&name.lexeme) else {
+            return Err(RuntimeError {
+                token: name.clone(),
+                message: format!("Undefined variable '{}'.", name.lexeme),
+            });
+        };
+        Ok(value.clone())
     }
 }
 

@@ -63,4 +63,8 @@ impl ExprVisitor<String> for ASTPrinter {
     ) -> Result<String, Self::Error> {
         self.parenthesize(&operator.lexeme, &[left, right])
     }
+
+    fn visit_variable(&self, name: &Token) -> Result<String, Self::Error> {
+        Ok(name.lexeme.clone())
+    }
 }

@@ -1,8 +1,10 @@
 pub mod ast_printer;
+pub mod environment;
 pub mod expr;
 pub mod interpreter;
 pub mod parser;
 pub mod scanner;
+pub mod stmt;
 
 use scanner::Scanner;
 use std::io::Write;
@@ -17,6 +19,7 @@ use crate::{
 pub struct Lox {
     pub had_error: bool,
     pub had_runtime_error: bool,
+    interpreter: Interpreter,
 }
 
 impl Lox {
@@ -74,8 +77,8 @@ impl Lox {
         }
         let mut parser = Parser::new(&tokens);
         match parser.parse() {
-            Ok(expression) => {
-                if let Err(err) = Interpreter.interpret(&expression) {
+            Ok(statements) => {
+                if let Err(err) = self.interpreter.interpret(statements) {
                     self.had_runtime_error = true;
                     self.error(err.token.line, &err.message);
                 }

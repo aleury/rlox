@@ -1,6 +1,7 @@
 use crate::{
     expr::{Expr, Value},
     scanner::{Token, TokenKind},
+    stmt::Stmt,
 };
 
 #[derive(Debug)]
@@ -24,8 +25,58 @@ impl<'a> Parser<'a> {
     /// # Errors
     ///
     /// Returns a `ParseError` if the tokens cannot be parsed into an expression.
-    pub fn parse(&mut self) -> Result<Expr, ParseError> {
-        self.expression()
+    pub fn parse(&mut self) -> Result<Vec<Stmt>, ParseError> {
+        let mut statements = Vec::new();
+        while !self.at_end() {
+            statements.push(self.declaration()?);
+        }
+        Ok(statements)
+    }
+
+    fn declaration(&mut self) -> Result<Stmt, ParseError> {
+        if matches!(self.peek().kind, TokenKind::Var) {
+            self.advance();
+            self.variable_declaration()
+        } else {
+            self.statement()
+        }
+    }
+
+    fn variable_declaration(&mut self) -> Result<Stmt, ParseError> {
+        let name = self.consume(&TokenKind::Identifier, "Expect variable name.")?;
+
+        let mut initial_expr = None;
+        if matches!(self.peek().kind, TokenKind::Equal) {
+            self.advance();
+            initial_expr = Some(self.expression()?);
+        }
+
+        self.consume(
+            &TokenKind::Semicolon,
+            "Expect ';' after a variable declaration.",
+        )?;
+        Ok(Stmt::Var(name, initial_expr))
+    }
+
+    fn statement(&mut self) -> Result<Stmt, ParseError> {
+        if matches!(self.peek().kind, TokenKind::Print) {
+            self.advance();
+            self.print_statement()
+        } else {
+            self.expression_statement()
+        }
+    }
+
+    fn print_statement(&mut self) -> Result<Stmt, ParseError> {
+        let expr = self.expression()?;
+        self.consume(&TokenKind::Semicolon, "Expect ';' after value.")?;
+        Ok(Stmt::Print(expr))
+    }
+
+    fn expression_statement(&mut self) -> Result<Stmt, ParseError> {
+        let expr = self.expression()?;
+        self.consume(&TokenKind::Semicolon, "Expect ';' after expression.")?;
+        Ok(Stmt::Expression(expr))
     }
 
     fn expression(&mut self) -> Result<Expr, ParseError> {
@@ -130,6 +181,7 @@ impl<'a> Parser<'a> {
             TokenKind::String(string) => Ok(Expr::Literal {
                 value: Value::String(string),
             }),
+            TokenKind::Identifier => Ok(Expr::Var { name: token }),
             TokenKind::LeftParen => {
                 let expr = self.expression()?;
                 self.consume(&TokenKind::RightParen, "Expect ')' after expression")?;
@@ -144,10 +196,14 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn consume(&mut self, token_type: &TokenKind, error_message: &str) -> Result<(), ParseError> {
+    fn consume(
+        &mut self,
+        token_type: &TokenKind,
+        error_message: &str,
+    ) -> Result<Token, ParseError> {
         if self.peek().kind == *token_type {
-            self.advance();
-            return Ok(());
+            let token = self.advance();
+            return Ok(token);
         }
         Err(ParseError::UnexpectedToken {
             token: self.peek(),
