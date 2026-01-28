@@ -64,8 +64,8 @@ impl Interpreter {
             }
             Stmt::Var(name, expr) => {
                 let value = match expr {
-                    Some(expr) => self.evaluate(expr)?,
                     None => Value::Nil,
+                    Some(expr) => self.evaluate(expr)?,
                 };
                 self.env.define(name.lexeme.clone(), value);
                 Ok(())
