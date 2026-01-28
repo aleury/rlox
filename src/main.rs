@@ -1,15 +1,20 @@
 #![allow(clippy::comparison_chain)]
 
+use clap::Parser;
 use rlox::Lox;
 
+#[derive(Parser)]
+#[command(version, about, long_about = None)]
+struct Args {
+    /// Run a script file
+    script: Option<String>,
+}
+
 fn main() -> std::io::Result<()> {
+    let args = Args::parse();
     let mut lox = Lox::new();
-    let args: Vec<String> = std::env::args().collect();
-    if args.len() > 2 {
-        println!("Usage: rlox [script]");
-        std::process::exit(64);
-    } else if args.len() == 2 {
-        lox.run_file(args[1].clone())?;
+    if let Some(script) = args.script {
+        lox.run_file(script)?;
     } else {
         lox.run_prompt()?;
     }
