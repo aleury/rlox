@@ -9,11 +9,7 @@ pub mod stmt;
 use scanner::Scanner;
 use std::io::Write;
 
-use crate::{
-    interpreter::Interpreter,
-    parser::{ParseError, Parser},
-    scanner::ScanError,
-};
+use crate::{interpreter::Interpreter, parser::Parser, scanner::ScanError};
 
 #[derive(Debug, Default)]
 pub struct Lox {
@@ -83,12 +79,9 @@ impl Lox {
                     self.error(err.token.line, &err.message);
                 }
             }
-            Err(ParseError::UnexpectedToken { token, message }) => {
+            Err(error) => {
                 self.had_error = true;
-                self.error(
-                    token.line,
-                    &format!("Unexpected Token: {}, {message}", token.lexeme),
-                );
+                self.error(error.token.line, &error.message);
             }
         }
     }

@@ -68,7 +68,7 @@ impl Interpreter {
         statement.accept(self)
     }
 
-    fn evaluate(&self, expr: &Expr) -> Result<Value, RuntimeError> {
+    fn evaluate(&mut self, expr: &Expr) -> Result<Value, RuntimeError> {
         expr.accept(self)
     }
 }
@@ -104,26 +104,19 @@ impl StmtVisitor<()> for Interpreter {
 impl ExprVisitor<Value> for Interpreter {
     type Error = RuntimeError;
 
-    fn visit_value(&self, value: &Value) -> Result<Value, Self::Error> {
-        Ok(value.clone())
-    }
-
-    fn visit_grouping(&self, expression: &Expr) -> Result<Value, Self::Error> {
-        self.evaluate(expression)
-    }
-
-    fn visit_unary(&self, operator: &Token, right: &Expr) -> Result<Value, Self::Error> {
-        let right = self.evaluate(right)?;
-
-        match (&operator.kind, &right) {
-            (TokenKind::Minus, Value::Number(num)) => Ok(Value::Number(-num)),
-            (TokenKind::Bang, value) => Ok(Value::Bool(!is_truthy(value))),
-            _ => error!(operator, "Operand must be a number", right),
-        }
+    fn visit_assign(&mut self, name: &Token, value: &Expr) -> Result<Value, Self::Error> {
+        let value = self.evaluate(value)?;
+        self.env
+            .assign(&name.lexeme, value.clone())
+            .map_err(|err| RuntimeError {
+                token: name.clone(),
+                message: err,
+            })?;
+        Ok(value)
     }
 
     fn visit_binary(
-        &self,
+        &mut self,
         left: &Expr,
         operator: &Token,
         right: &Expr,
@@ -173,7 +166,15 @@ impl ExprVisitor<Value> for Interpreter {
         }
     }
 
-    fn visit_variable(&self, name: &Token) -> Result<Value, Self::Error> {
+    fn visit_grouping(&mut self, expression: &Expr) -> Result<Value, Self::Error> {
+        self.evaluate(expression)
+    }
+
+    fn visit_literal(&mut self, value: &Value) -> Result<Value, Self::Error> {
+        Ok(value.clone())
+    }
+
+    fn visit_variable(&mut self, name: &Token) -> Result<Value, Self::Error> {
         let Some(value) = self.env.get(&name.lexeme) else {
             return Err(RuntimeError {
                 token: name.clone(),
@@ -181,6 +182,16 @@ impl ExprVisitor<Value> for Interpreter {
             });
         };
         Ok(value.clone())
+    }
+
+    fn visit_unary(&mut self, operator: &Token, right: &Expr) -> Result<Value, Self::Error> {
+        let right = self.evaluate(right)?;
+
+        match (&operator.kind, &right) {
+            (TokenKind::Minus, Value::Number(num)) => Ok(Value::Number(-num)),
+            (TokenKind::Bang, value) => Ok(Value::Bool(!is_truthy(value))),
+            _ => error!(operator, "Operand must be a number", right),
+        }
     }
 }
 

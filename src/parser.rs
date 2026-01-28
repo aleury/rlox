@@ -5,8 +5,9 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub enum ParseError {
-    UnexpectedToken { token: Token, message: String },
+pub struct ParseError {
+    pub token: Token,
+    pub message: String,
 }
 
 pub struct Parser<'a> {
@@ -80,7 +81,28 @@ impl<'a> Parser<'a> {
     }
 
     fn expression(&mut self) -> Result<Expr, ParseError> {
-        self.equality()
+        self.assignment()
+    }
+
+    fn assignment(&mut self) -> Result<Expr, ParseError> {
+        let expr = self.equality()?;
+
+        if matches!(self.peek().kind, TokenKind::Equal) {
+            let equals = self.advance();
+            let value = self.assignment()?;
+            let Expr::Var { name } = expr else {
+                return Err(ParseError {
+                    token: equals,
+                    message: "Invalid assignment target".to_string(),
+                });
+            };
+            return Ok(Expr::Assign {
+                name,
+                value: Box::new(value),
+            });
+        }
+
+        Ok(expr)
     }
 
     fn equality(&mut self) -> Result<Expr, ParseError> {
@@ -189,7 +211,7 @@ impl<'a> Parser<'a> {
                     expression: Box::new(expr),
                 })
             }
-            _ => Err(ParseError::UnexpectedToken {
+            _ => Err(ParseError {
                 token,
                 message: "Expect expression".into(),
             }),
@@ -205,7 +227,7 @@ impl<'a> Parser<'a> {
             let token = self.advance();
             return Ok(token);
         }
-        Err(ParseError::UnexpectedToken {
+        Err(ParseError {
             token: self.peek(),
             message: error_message.into(),
         })
