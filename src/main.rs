@@ -13,10 +13,8 @@ struct Args {
 fn main() -> std::io::Result<()> {
     let args = Args::parse();
     let mut lox = Lox::new();
-    if let Some(script) = args.script {
-        lox.run_file(script)?;
-    } else {
-        lox.run_prompt()?;
+    match args.script {
+        None => lox.run_prompt(),
+        Some(script) => lox.run_file(script),
     }
-    Ok(())
 }
